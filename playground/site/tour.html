@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A tour of Ember</title>
+  <meta name="description" content="Learn Ember in twelve short lessons, each with a program you can change and run in your browser.">
+  <meta property="og:title" content="A tour of Ember">
+  <meta property="og:description" content="Learn Ember in twelve short lessons, each with a program you can change and run in your browser.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/site.css">
+  <script>try { const t = localStorage.getItem('ember-theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}</script>
+</head>
+<body>
+<header class="site">
+  <a class="brand" href="index.html" aria-label="Ember home"><img src="logo.svg" alt="" width="34" height="34"><span class="word">Ember</span></a>
+  <nav class="nav" aria-label="Site"><a href="tour.html" aria-current="page">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside the compiler</a><a href="reference.html">Reference</a><a href="https://github.com/muneeb12011/ember-lang">GitHub</a></nav>
+  <button id="theme" class="icon-btn" type="button" aria-label="Switch between light and dark">
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+  </button>
+</header>
+<main class="tour">
+  <nav class="lessons" aria-label="Lessons">
+    <h2>Twelve lessons</h2>
+    <ol id="lesson-list"></ol>
+  </nav>
+
+  <article class="lesson">
+    <label class="lesson-pick"><span class="sr-only">Go to lesson</span><select class="pick" id="lesson-pick"></select></label>
+    <p class="step" id="step"></p>
+    <h1 id="lesson-title"></h1>
+    <div class="prose" id="lesson-body"></div>
+    <div class="lesson-nav">
+      <a class="btn ghost small" id="prev" href="#">Previous</a>
+      <a class="btn solid small" id="next" href="#">Next lesson</a>
+    </div>
+  </article>
+
+  <section class="lesson-run" aria-label="Lesson program">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="file" id="lesson-file">main.em</span>
+        <div class="push">
+          <button class="btn small ghost" id="reset" type="button">Reset</button>
+          <button class="btn small solid" id="run" type="button" disabled><span class="coal" aria-hidden="true"></span><span class="label">Loading</span><kbd>Ctrl ↵</kbd></button>
+        </div>
+      </div>
+      <div id="editor"></div>
+    </div>
+    <div class="pane" aria-live="polite">
+      <div class="pane-head"><span class="title">Output</span><a class="note push" id="open-play" href="play.html">See its IR and assembly in the playground</a></div>
+      <pre class="out" id="out"></pre>
+      <div class="status" id="status">Loading the compiler.</div>
+    </div>
+  </section>
+</main>
+<footer class="foot">
+  <p>Ember is a personal project by Muneeb: the language, its compiler, runtime, garbage collector and standard
+    library, written from scratch to understand what happens underneath the tools I use every day.</p>
+  <nav aria-label="Footer"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside</a><a href="reference.html">Reference</a><a href="https://github.com/muneeb12011/ember-lang">Source on GitHub</a></nav>
+</footer>
+<script src="data/lessons.js"></script>
+<script src="js/ember.js"></script>
+<script src="js/tour.js"></script>
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ember language reference</title>
+  <meta name="description" content="Every type, statement, operator, built-in function and standard library module in Ember.">
+  <meta property="og:title" content="Ember language reference">
+  <meta property="og:description" content="Every type, statement, operator, built-in function and standard library module in Ember.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/site.css">
+  <script>try { const t = localStorage.getItem('ember-theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}</script>
+</head>
+<body>
+<header class="site">
+  <a class="brand" href="index.html" aria-label="Ember home"><img src="logo.svg" alt="" width="34" height="34"><span class="word">Ember</span></a>
+  <nav class="nav" aria-label="Site"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside the compiler</a><a href="reference.html" aria-current="page">Reference</a><a href="https://github.com/muneeb12011/ember-lang">GitHub</a></nav>
+  <button id="theme" class="icon-btn" type="button" aria-label="Switch between light and dark">
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+  </button>
+</header>
+<main class="ref">
+  <nav class="ref-toc" aria-label="On this page">
+    <h2>On this page</h2>
+    <a href="#types">Types</a><a href="#declarations">Declarations</a><a href="#statements">Statements</a><a href="#expressions">Expressions</a><a href="#generics">Generics</a><a href="#closures">Closures</a><a href="#built-in-functions">Built-in functions</a><a href="#runtime-errors">Runtime errors</a><a href="#standard-library">Standard library</a><a href="#command-line">Command line</a>
+  </nav>
+  <article class="ref-body">
+    <h1>Language reference</h1>
+    <p class="lede">Everything in Ember on one page. New to the language? The <a href="tour.html">tour</a> is the
+      gentler way in.</p>
+    <h2 id="types">Types</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code></td>
+<td>64-bit signed integer; arithmetic wraps around on overflow</td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td>IEEE 754 double</td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>true</code> or <code>false</code></td>
+</tr>
+<tr>
+<td><code>str</code></td>
+<td>immutable string of bytes; <code>s[i]</code> is the byte at <code>i</code> (an int), <code>len(s)</code> its length</td>
+</tr>
+<tr>
+<td><code>[T]</code></td>
+<td>array of T, fixed length, mutable elements; <code>[byte]</code> and <code>[bool]</code> use one byte per element</td>
+</tr>
+<tr>
+<td><code>Name</code></td>
+<td>a declared struct or enum (a reference; may be <code>null</code>)</td>
+</tr>
+<tr>
+<td><code>Name&lt;T, ...&gt;</code></td>
+<td>an instance of a generic struct or enum</td>
+</tr>
+<tr>
+<td><code>fn(A, B) -&gt; R</code></td>
+<td>a function value (a top-level function or a closure); <code>fn(A)</code> returns nothing</td>
+</tr>
+</tbody>
+</table>
+<p><code>byte</code> exists only as an array element type: <code>[byte]</code> elements read as ints from 0 to 255 and store the low 8 bits.</p>
+<p>Structs, enums, arrays and function values are references: <code>==</code> compares identity, and they may be <code>null</code>
+(<code>let p: Point = null;</code>). Every other type, <code>str</code> included, is compared by value.</p>
+<h2 id="declarations">Declarations</h2>
+<pre data-lang="ember">import &quot;std/math.em&quot; as math;          // qualified access: math.abs(x), math.PI
+import &quot;util.em&quot;;                      // unqualified access to util.em's pub names
+pub const LIMIT = 100;                 // constants: int, float, bool, char or str literals
+pub struct Point { x: int, y: int }
+struct Pair&lt;A, B&gt; { first: A, second: B }
+pub enum Option&lt;T&gt; { Some(T), None }   // variants carry 0 to 6 values
+pub fn add(a: int, b: int) -&gt; int { return a + b; }
+fn swap&lt;A, B&gt;(p: Pair&lt;A, B&gt;) -&gt; Pair&lt;B, A&gt; { return Pair { first: p.second, second: p.first }; }
+fn main() -&gt; int { return 0; }         // the entry point; its result is the exit code
+</pre>
+<p>Every top-level name is private to its file unless declared <code>pub</code>. A file's own declarations come first, then the
+built-in functions, then the names imported without <code>as</code>. If two <code>as</code>-less imports both define a name, using it
+unqualified is an error: qualify it. Functions take at most 6 parameters (5 when used as values).</p>
+<h2 id="statements">Statements</h2>
+<pre data-lang="ember">let x = 1;                  // immutable
+let mut y: float = 2.0;     // can be reassigned
+y = y * 2.0;
+x += 1;                     // also -= *= /= %= &amp;= |= ^= &lt;&lt;= &gt;&gt;=
+if c { ... } else if d { ... } else { ... }
+while c { ... }
+for i in 0..n { ... }       // i runs from 0 up to n - 1
+break;  continue;  return v;
+match shape {
+    Circle(r) =&gt; { ... }
+    Rect(w, _) =&gt; { ... }   // _ ignores a value
+    _ =&gt; { ... }            // anything else
+}
+</pre>
+<p>A <code>match</code> must cover every variant or have a <code>_</code> arm; a missing variant is a compile error that names it. Only
+calls can be expression statements. A function that returns a value must return on every path.</p>
+<h2 id="expressions">Expressions</h2>
+<p>Operators, from loosest to tightest binding, all left-associative:</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>\|\|</code></td>
+<td>logical or (short-circuit)</td>
+</tr>
+<tr>
+<td><code>&amp;&amp;</code></td>
+<td>logical and (short-circuit)</td>
+</tr>
+<tr>
+<td><code>== !=</code></td>
+<td>equality</td>
+</tr>
+<tr>
+<td><code>&lt; &lt;= &gt; &gt;=</code></td>
+<td>ordering (ints, floats, strs)</td>
+</tr>
+<tr>
+<td><code>\|</code></td>
+<td>bitwise or</td>
+</tr>
+<tr>
+<td><code>^</code></td>
+<td>bitwise xor</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td>bitwise and</td>
+</tr>
+<tr>
+<td><code>&lt;&lt; &gt;&gt;</code></td>
+<td>shifts (<code>&gt;&gt;</code> is arithmetic; the count is taken mod 64)</td>
+</tr>
+<tr>
+<td><code>+ -</code></td>
+<td>add, subtract (<code>+</code> also joins strs)</td>
+</tr>
+<tr>
+<td><code>* / %</code></td>
+<td>multiply, divide (truncates toward zero), remainder (takes the sign of the dividend)</td>
+</tr>
+<tr>
+<td><code>- ! ~</code></td>
+<td>unary negate, not, bitwise not</td>
+</tr>
+</tbody>
+</table>
+<p>Bitwise operators bind tighter than comparisons, so <code>x &amp; 1 == 1</code> means <code>(x &amp; 1) == 1</code>, as in Rust and Go. Ints
+and floats never mix implicitly: write <code>float(i)</code> or <code>int(x)</code>.</p>
+<p><strong>Literals:</strong> <code>42</code>, <code>0xFF</code>, <code>0b1010</code>, <code>1_000_000</code>, <code>1.5</code>, <code>2.0e-3</code>, <code>'a'</code> (an int), <code>"text\n"</code> (escapes
+<code>\n \t \r \0 \\ \" \' \xHH</code>), <code>true</code>, <code>false</code>, <code>null</code>, arrays <code>[1, 2, 3]</code>.</p>
+<p><strong>Other expressions:</strong> <code>a[i]</code>, <code>p.x</code>, <code>f(x)</code>, <code>math.abs(x)</code>, <code>Point { x: 1, y: 2 }</code>, <code>Pair&lt;int, str&gt; { ... }</code>,
+<code>Shape.Circle(1.0)</code>, <code>Option&lt;int&gt;.None</code>, <code>new [int](n)</code> (a zeroed array: 0, 0.0, false, "" or null), <code>id&lt;str&gt;</code> (a
+generic function as a value), and anonymous functions <code>fn(x: int) -&gt; int { return x + k; }</code>.</p>
+<h2 id="generics">Generics</h2>
+<p>Structs, enums and functions can be generic. Type arguments are inferred from the arguments, then from the type the
+context expects, and can always be written out: <code>vec.make&lt;int&gt;()</code>.</p>
+<p>Generic code is checked once, with each type parameter treated as opaque: a value of type <code>T</code> can be stored, passed,
+returned and compared with <code>==</code>, but not printed or added. The compiler then makes one copy of each generic function
+per list of type arguments it's used with (monomorphization), so generic code runs as fast as hand-written code.</p>
+<h2 id="closures">Closures</h2>
+<p>An anonymous function can use the variables around it. <strong>Closures capture by value</strong>: each one gets a copy of the
+variables it uses, made when it's created, and assigning to a captured variable is a compile error. Local variables
+live in registers and stack slots that disappear when their function returns, while a closure can outlive that
+function, so a copy is the behaviour that stays predictable. To share state that changes, capture a struct or an
+array and change its contents:</p>
+<pre data-lang="ember">fn make_counter() -&gt; fn() -&gt; int {
+    let c = Counter { n: 0 };
+    return fn() -&gt; int { c.n += 1; return c.n; };
+}
+</pre>
+<h2 id="built-in-functions">Built-in functions</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Functions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Output</td>
+<td><code>print(x)</code> (int, float, bool or str, plus a line break; floats print with 6 decimals), <code>put(s)</code> (no line break)</td>
+</tr>
+<tr>
+<td>Input</td>
+<td><code>read_int()</code>, <code>read_line()</code>, <code>at_eof()</code></td>
+</tr>
+<tr>
+<td>Strings</td>
+<td><code>len(s)</code>, <code>substr(s, start, count)</code>, <code>chr(c)</code>, <code>str(x)</code>, <code>parse_int(s)</code>, <code>str_from_bytes(bytes, n)</code></td>
+</tr>
+<tr>
+<td>Arrays</td>
+<td><code>len(a)</code>, <code>new [T](n)</code></td>
+</tr>
+<tr>
+<td>Numbers</td>
+<td><code>int(x)</code>, <code>float(i)</code>, <code>sqrt</code> <code>sin</code> <code>cos</code> <code>tan</code> <code>atan</code> <code>atan2</code> <code>exp</code> <code>log</code> <code>pow</code> <code>floor</code> <code>ceil</code></td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>read_file(path)</code>, <code>write_file(path, s)</code>, <code>append_file(path, s)</code>, <code>file_exists(path)</code></td>
+</tr>
+<tr>
+<td>Process</td>
+<td><code>arg_count()</code>, <code>arg(i)</code>, <code>env(name)</code> ("" if unset), <code>has_env(name)</code>, <code>exit(code)</code>, <code>clock_ns()</code></td>
+</tr>
+<tr>
+<td>Errors</td>
+<td><code>panic(message)</code>, <code>assert(condition)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Files and the process environment are not available in the browser playground.</p>
+<h2 id="runtime-errors">Runtime errors</h2>
+<p>These stop the program with <code>runtime error: &lt;what&gt; (line N)</code> and exit code 1: index out of bounds, division by zero,
+negative array size, out of memory, null dereference, failed assert, panic, a file that can't be read or written, and
+stack overflow. <code>int(x)</code> of a NaN or out-of-range float gives the smallest int, as the hardware does.</p>
+<h2 id="standard-library">Standard library</h2>
+<p>Written in Ember and built into the compiler: <code>import "std/&lt;name&gt;.em" as &lt;name&gt;;</code></p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vec</code></td>
+<td><code>Vec&lt;T&gt;</code>: make, with_capacity, from_array, size, is_empty, push, get, get_opt, set, pop, last, clear, to_array, index_of, contains, reverse, sum</td>
+</tr>
+<tr>
+<td><code>option</code></td>
+<td><code>Option&lt;T&gt;</code> (Some, None): some, none, is_some, is_none, unwrap, unwrap_or</td>
+</tr>
+<tr>
+<td><code>iter</code></td>
+<td>map, filter, fold, any, all, count, each, find_index, range, tabulate, zip_with</td>
+</tr>
+<tr>
+<td><code>str</code></td>
+<td>split, join, find, contains, count, replace, trim, upper, lower, reverse, repeat, pad_left, starts_with, ends_with</td>
+</tr>
+<tr>
+<td><code>strbuf</code></td>
+<td><code>StrBuf</code>, a string builder: make, push, push_char, push_int, size, clear, to_str</td>
+</tr>
+<tr>
+<td><code>map</code></td>
+<td><code>IntMap</code>, a hash map from int to int: make, put, get, has, size, keys</td>
+</tr>
+<tr>
+<td><code>sort</code></td>
+<td>ints, floats (quicksort), strs (stable merge sort), is_sorted, search</td>
+</tr>
+<tr>
+<td><code>math</code></td>
+<td>abs, sign, min, max, clamp, mod, gcd, lcm, pow, isqrt, is_prime, fabs, fmin, fmax, PI, E</td>
+</tr>
+<tr>
+<td><code>rand</code></td>
+<td><code>Rng</code>, a deterministic 64-bit generator: make, next, range, next_float, shuffle</td>
+</tr>
+<tr>
+<td><code>io</code></td>
+<td>read_ints, read_lines</td>
+</tr>
+</tbody>
+</table>
+<h2 id="command-line">Command line</h2>
+<pre>embc prog.em -o prog &amp;&amp; ./prog       native x86-64 executable
+embc prog.em --run -- arg1 arg2      compile and run, with program arguments
+embc prog.em --interp                run on the reference interpreter
+embc prog.em --target wasm -o p.js   WebAssembly, run with node p.js
+embc prog.em --test                  run every fn test_*() in the file
+embc fmt prog.em -w                  format the file in place
+embc prog.em -g -o prog              with debug info: gdb can break on Ember lines
+embc prog.em --emit-ir | --emit-asm | --stats | -O0
+</pre>
+  </article>
+</main>
+<footer class="foot">
+  <p>Ember is a personal project by Muneeb: the language, its compiler, runtime, garbage collector and standard
+    library, written from scratch to understand what happens underneath the tools I use every day.</p>
+  <nav aria-label="Footer"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside</a><a href="reference.html">Reference</a><a href="https://github.com/muneeb12011/ember-lang">Source on GitHub</a></nav>
+</footer>
+<script src="js/ember.js"></script>
+<script>highlightStatic();</script>
+</body>
+</html>

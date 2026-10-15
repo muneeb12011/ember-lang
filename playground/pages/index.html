@@ -1,0 +1,146 @@
+{{HEAD Ember: source in, machine code out | A programming language with its own optimizing compiler, written from scratch. Run it in your browser.}}
+<body>
+{{HEADER index}}
+<main>
+  <section class="hero">
+    <div class="hero-row">
+    <div>
+      <h1><span>Source in.</span> <span>Machine code out.</span></h1>
+      <p class="lede">Ember is a programming language I built from scratch, with its own optimizing compiler:
+        <strong>about 6,700 lines of C++</strong> from the lexer to the register allocator, and no dependencies.
+        The compiler on this page is the real one, built to WebAssembly.</p>
+      <div class="cta">
+        <a class="btn solid" href="tour.html"><span class="coal" aria-hidden="true"></span>Take the tour</a>
+        <a class="btn ghost" href="play.html">Open the playground</a>
+      </div>
+    </div>
+
+    <div class="pane demo" aria-label="Live compiler demo">
+      <div class="rail" id="rail">
+        <div class="rail-track" aria-hidden="true"><div class="rail-heat"></div></div>
+        <div class="stage" data-stage="src"><span class="node"></span><span class="stage-name">Source</span><span class="stat"></span></div>
+        <div class="stage" data-stage="ir0"><span class="node"></span><span class="stage-name">IR</span><span class="stat"></span></div>
+        <div class="stage" data-stage="ir1"><span class="node"></span><span class="stage-name">Optimized</span><span class="stat"></span></div>
+        <div class="stage" data-stage="asm"><span class="node"></span><span class="stage-name">x86-64</span><span class="stat"></span></div>
+        <div class="stage" data-stage="out"><span class="node"></span><span class="stage-name">Output</span><span class="stat"></span></div>
+      </div>
+      <div class="pane-head">
+        <span class="file">shapes.em</span>
+        <span class="note" id="demo-note">Edit it if you like</span>
+        <div class="push">
+          <button class="btn small solid" id="run" type="button" disabled><span class="coal" aria-hidden="true"></span><span class="label">Loading</span></button>
+        </div>
+      </div>
+      <div id="editor"></div>
+      <pre class="out" id="out"><span class="quiet">Press Run to send this program through the compiler. Each stage above lights up as it finishes.</span></pre>
+    </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-read">
+    <h2 id="h-read">Reads like you already know it</h2>
+    <p class="intro">Ember borrows the parts of Rust, Go and TypeScript that keep programs honest, and leaves out
+      the ceremony. Here is one program, part by part.</p>
+    <div class="annotated">
+      <div class="chunk">
+<pre data-lang="ember">import "std/vec.em" as vec;</pre>
+        <p class="note"><b>Modules</b>Every name is private to its file unless marked <code>pub</code>. The standard
+          library is written in Ember and ships inside the compiler.</p>
+      </div>
+      <div class="chunk">
+<pre data-lang="ember">enum Reading { Temp(float), Offline(str) }
+
+fn describe(r: Reading) -> str {
+    match r {
+        Temp(c) => { return str(c) + " C"; }
+        Offline(why) => { return "offline: " + why; }
+    }
+}</pre>
+        <p class="note"><b>Enums carry data, and match is exhaustive</b>Add a variant and forget to handle it here,
+          and the program doesn't compile. The error names the missing variant.</p>
+      </div>
+      <div class="chunk">
+<pre data-lang="ember">fn keep&lt;T&gt;(xs: vec.Vec&lt;T&gt;, ok: fn(T) -> bool) -> vec.Vec&lt;T&gt; {
+    let out = vec.make&lt;T&gt;();
+    for i in 0..vec.size(xs) {
+        if ok(vec.get(xs, i)) { vec.push(out, vec.get(xs, i)); }
+    }
+    return out;
+}</pre>
+        <p class="note"><b>Generics without the slowdown</b>The compiler makes one copy of <code>keep</code> for
+          each type it's used with, so generic code runs as fast as code written for one type.</p>
+      </div>
+      <div class="chunk">
+<pre data-lang="ember">fn main() -> int {
+    let limit = 30.0;
+    let temps = vec.from_array([24.5, 31.0, 28.2, 33.7]);
+    let hot = keep(temps, fn(t: float) -> bool { return t > limit; });
+    print(vec.size(hot));
+    print(describe(Reading.Temp(vec.get(hot, 0))));
+    return 0;
+}</pre>
+        <p class="note"><b>Closures, checked types</b>The closure gets its own copy of <code>limit</code>. Ints
+          and floats never mix by accident, and every array access is bounds-checked unless the optimizer proves
+          it safe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-stages">
+    <h2 id="h-stages">Six stages, every one hand-written</h2>
+    <p class="intro">No parser generator, no LLVM, no borrowed back end. Each stage is a file you can read, and the
+      line counts are real.</p>
+    <ol class="stages">
+      <li><span class="node"></span><h3>Lexer</h3><p>Turns text into tokens: numbers in four bases, strings with escapes, comments kept for the formatter.</p><span class="src">lexer.hpp, 278 lines</span></li>
+      <li><span class="node"></span><h3>Parser</h3><p>Recursive descent with precedence climbing. Generics, match and lambdas included.</p><span class="src">parser.hpp, 732 lines</span></li>
+      <li><span class="node"></span><h3>Type checker</h3><p>Infers generic arguments, checks every match covers every variant, and reports all errors with a caret.</p><span class="src">sema.hpp, 983 lines</span></li>
+      <li><span class="node"></span><h3>IR</h3><p>Lowers the checked program to three-address code on virtual registers, one copy per generic instance.</p><span class="src">ir.hpp, 761 lines</span></li>
+      <li><span class="node"></span><h3>Optimizer</h3><p>Fifteen passes: propagation, CSE, loop-invariant motion, inlining, tail calls, bounds-check removal.</p><span class="src">opt.hpp, 965 lines</span></li>
+      <li><span class="node"></span><h3>Back ends</h3><p>x86-64 with a linear-scan register allocator, a WebAssembly encoder, and a reference interpreter.</p><span class="src">codegen, wasm, interp: 1,428 lines</span></li>
+    </ol>
+  </section>
+
+  <section class="section" aria-labelledby="h-test">
+    <h2 id="h-test">Every program runs six ways, and they must agree</h2>
+    <p class="intro">A compiler bug rarely crashes. It quietly produces a wrong answer. So every test program runs on
+      three completely different executors, with the optimizer off and on, and all six outputs have to match an
+      answer computed independently in Python, byte for byte.</p>
+    <div class="paths">
+      <table class="matrix">
+        <thead><tr><th scope="col">52 test programs</th><th scope="col">optimizer off</th><th scope="col">optimizer on</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Reference interpreter</th><td>52 agree</td><td>52 agree</td></tr>
+          <tr><th scope="row">Native x86-64</th><td>52 agree</td><td>52 agree</td></tr>
+          <tr><th scope="row">WebAssembly on node</th><td>52 agree</td><td>52 agree</td></tr>
+        </tbody>
+      </table>
+      <div>
+        <ul class="facts">
+          <li><span class="n">408</span><span class="what">checks in the test suite, including 71 programs that must fail to compile with the exact expected message</span></li>
+          <li><span class="n">1,000</span><span class="what">random programs from the differential fuzzer, all six paths agreeing on every one</span></li>
+          <li><span class="n">200</span><span class="what">runs with a garbage collection forced on every single allocation</span></li>
+        </ul>
+        <p class="story"><b>What it caught.</b> Three string-handling programs gave different answers with the
+          optimizer on. The cause: the inliner renamed registers inside instructions but not inside runtime-call
+          arguments, so inlined code read the caller's values. To prove the fuzzer would have found it, I put the bug
+          back: it failed 3 of 30 random programs, and the shrinker cut the first one from 51 lines to 16.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div>
+      <h2>Learn it in twelve short lessons</h2>
+      <p>Each lesson is a page of reading and a program you can change and run, right here. No install.</p>
+    </div>
+    <div class="cta">
+      <a class="btn light" href="tour.html"><span class="coal" aria-hidden="true"></span>Start lesson 1</a>
+      <a class="btn ghost" href="inside.html">See inside the compiler</a>
+    </div>
+  </section>
+</main>
+{{FOOTER}}
+<script src="js/ember.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

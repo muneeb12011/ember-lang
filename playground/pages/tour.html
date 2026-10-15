@@ -1,0 +1,44 @@
+{{HEAD A tour of Ember | Learn Ember in twelve short lessons, each with a program you can change and run in your browser.}}
+<body>
+{{HEADER tour}}
+<main class="tour">
+  <nav class="lessons" aria-label="Lessons">
+    <h2>Twelve lessons</h2>
+    <ol id="lesson-list"></ol>
+  </nav>
+
+  <article class="lesson">
+    <label class="lesson-pick"><span class="sr-only">Go to lesson</span><select class="pick" id="lesson-pick"></select></label>
+    <p class="step" id="step"></p>
+    <h1 id="lesson-title"></h1>
+    <div class="prose" id="lesson-body"></div>
+    <div class="lesson-nav">
+      <a class="btn ghost small" id="prev" href="#">Previous</a>
+      <a class="btn solid small" id="next" href="#">Next lesson</a>
+    </div>
+  </article>
+
+  <section class="lesson-run" aria-label="Lesson program">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="file" id="lesson-file">main.em</span>
+        <div class="push">
+          <button class="btn small ghost" id="reset" type="button">Reset</button>
+          <button class="btn small solid" id="run" type="button" disabled><span class="coal" aria-hidden="true"></span><span class="label">Loading</span><kbd>Ctrl ↵</kbd></button>
+        </div>
+      </div>
+      <div id="editor"></div>
+    </div>
+    <div class="pane" aria-live="polite">
+      <div class="pane-head"><span class="title">Output</span><a class="note push" id="open-play" href="play.html">See its IR and assembly in the playground</a></div>
+      <pre class="out" id="out"></pre>
+      <div class="status" id="status">Loading the compiler.</div>
+    </div>
+  </section>
+</main>
+{{FOOTER}}
+<script src="data/lessons.js"></script>
+<script src="js/ember.js"></script>
+<script src="js/tour.js"></script>
+</body>
+</html>

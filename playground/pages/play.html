@@ -1,0 +1,51 @@
+{{HEAD Ember playground | Write an Ember program and watch the compiler turn it into IR, optimized IR and x86-64.}}
+<body class="play-page">
+{{HEADER play}}
+<main>
+  <div class="play-bar">
+    <h1>Playground</h1>
+    <label><span class="sr-only">Load an example</span><select class="pick" id="examples"></select></label>
+    <div class="push">
+      <button class="btn small ghost" id="share" type="button">Copy link</button>
+      <button class="btn small solid" id="run" type="button" disabled><span class="coal" aria-hidden="true"></span><span class="label">Loading</span><kbd>Ctrl ↵</kbd></button>
+    </div>
+  </div>
+
+  <nav class="rail play-rail" id="rail" aria-label="Compiler stages">
+    <div class="rail-track" aria-hidden="true"><div class="rail-heat"></div></div>
+    <div><div class="stage" data-stage="src"><span class="node"></span><span class="stage-name">Source</span><span class="stat" id="stat-src"></span></div></div>
+    <div class="rest">
+      <button class="stage" data-stage="ir0" aria-pressed="false"><span class="node"></span><span class="stage-name">IR</span><span class="stat"></span></button>
+      <button class="stage" data-stage="ir1" aria-pressed="false"><span class="node"></span><span class="stage-name">Optimized</span><span class="stat"></span></button>
+      <button class="stage" data-stage="asm" aria-pressed="false"><span class="node"></span><span class="stage-name">x86-64</span><span class="stat"></span></button>
+      <button class="stage" data-stage="out" aria-pressed="true"><span class="node"></span><span class="stage-name">Output</span><span class="stat"></span></button>
+    </div>
+  </nav>
+
+  <div class="work">
+    <section class="pane" aria-label="Source code">
+      <div class="pane-head"><span class="file">main.em</span><span class="note push" id="cursor">Line 1, column 1</span></div>
+      <div id="editor"></div>
+    </section>
+    <section class="pane" aria-live="polite">
+      <div class="pane-head"><span class="title" id="view-title">Output</span><span class="note" id="view-note"></span></div>
+      <div class="views">
+        <pre class="out" id="view-out"></pre>
+        <pre class="out" id="view-ir0" hidden></pre>
+        <pre class="out" id="view-ir1" hidden></pre>
+        <pre class="out" id="view-asm" hidden></pre>
+      </div>
+      <details class="stdin">
+        <summary>Program input</summary>
+        <textarea id="stdin" spellcheck="false" rows="3" placeholder="One value per line, for read_int() and read_line()"></textarea>
+      </details>
+      <div class="status" id="status">Loading the compiler: 900 KB of WebAssembly, once.</div>
+    </section>
+  </div>
+</main>
+{{FOOTER}}
+<script src="data/examples.js"></script>
+<script src="js/ember.js"></script>
+<script src="js/play.js"></script>
+</body>
+</html>

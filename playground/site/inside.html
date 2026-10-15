@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inside the Ember compiler</title>
+  <meta name="description" content="Follow one program through every stage of the Ember compiler: type checking, IR, optimization, x86-64, garbage collection and testing.">
+  <meta property="og:title" content="Inside the Ember compiler">
+  <meta property="og:description" content="Follow one program through every stage of the Ember compiler: type checking, IR, optimization, x86-64, garbage collection and testing.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/site.css">
+  <script>try { const t = localStorage.getItem('ember-theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}</script>
+</head>
+<body>
+<header class="site">
+  <a class="brand" href="index.html" aria-label="Ember home"><img src="logo.svg" alt="" width="34" height="34"><span class="word">Ember</span></a>
+  <nav class="nav" aria-label="Site"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html" aria-current="page">Inside the compiler</a><a href="reference.html">Reference</a><a href="https://github.com/muneeb12011/ember-lang">GitHub</a></nav>
+  <button id="theme" class="icon-btn" type="button" aria-label="Switch between light and dark">
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+  </button>
+</header>
+<main>
+  <header class="doc-head">
+    <h1>One loop, all the way down</h1>
+    <p class="lede">Eight lines of Ember go in. Here is everything the compiler does to them on the way to machine
+      code, using its real output, and what the runtime and the test suite do around it.</p>
+  </header>
+
+  <div class="journey">
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">lexer.hpp, parser.hpp, modules.hpp</p>
+        <h2>Text becomes a tree</h2>
+        <p>The lexer cuts the file into tokens: <code>fn</code>, <code>main</code>, <code>(</code>, and so on. The
+          parser, a hand-written recursive-descent parser, builds them into a syntax tree, using precedence climbing
+          for operators. Bitwise operators bind tighter than comparisons, so <code>x &amp; 1 == 1</code> means what it
+          looks like, unlike in C.</p>
+        <p>Then the module loader resolves imports. Each file is its own namespace, a file imported twice through
+          different paths loads once, and an import cycle is an error.</p>
+      </div>
+      <div class="art">
+        <pre class="code" data-lang="ember">fn main() -&gt; int {
+    let mut total = 0;
+    for i in 0..10 {
+        total += i * i;
+    }
+    print(total);
+    return 0;
+}</pre>
+        <p class="caption">The program: the sum of the squares of 0 to 9.</p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">sema.hpp, mono.hpp</p>
+        <h2>Checked before anything runs</h2>
+        <p>The type checker walks the tree and settles the type of every expression. It infers generic arguments
+          from the call, and from what the surrounding code expects when the arguments aren't enough. It checks that
+          every <code>match</code> covers every variant and that every path through a function returns.</p>
+        <p>It reports every error it finds, not just the first, each with a caret under the exact spot. Change
+          <code>total += i * i;</code> to <code>total += 1.5;</code> and this is what you get:</p>
+      </div>
+      <div class="art">
+        <pre class="code err-block">main.em:4:15: error: `+` needs two ints, two floats or two strs, found `int` and `float` (convert explicitly with float(x) or int(x))
+  4 |         total += 1.5;
+                    ^
+1 error</pre>
+        <p class="caption">Ints and floats never convert silently.</p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">ir.hpp</p>
+        <h2>A tree becomes 14 instructions</h2>
+        <p>The checked program is lowered to IR: three-address code where every instruction does one thing to
+          numbered virtual registers, <code>r0</code>, <code>r1</code>, as many as it needs. Labels like
+          <code>L0</code> mark the starts of basic blocks: straight runs of code that control flow can only enter
+          at the top.</p>
+        <p>Here, <code>r0</code> is <code>total</code> and <code>r2</code> is the loop counter. The <code>for</code>
+          loop has become a test at <code>L0</code>, a body at <code>L1</code>, an increment at <code>L2</code> and
+          a jump back. The lowering is deliberately naive: it copies freely and leaves the clean-up to the next stage.</p>
+      </div>
+      <div class="art">
+        <pre class="code" data-lang="ir">func main(0 params, 7 regs)
+  r0 = mov 0
+  r2 = mov 0
+  r3 = mov 10
+L0:
+  r4 = lt r2, r3
+  br r4, L1, L3
+L1:
+  r1 = mov r2
+  r5 = mul r1, r1
+  r6 = add r0, r5
+  r0 = mov r6
+L2:
+  r2 = add r2, 1
+  jmp L0
+L3:
+  print_int r0
+  ret 0
+  ret 0</pre>
+        <p class="caption">The IR before optimization: <code>embc main.em --emit-ir -O0</code></p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">opt.hpp</p>
+        <h2>14 instructions become 10</h2>
+        <p>The optimizer runs its passes until nothing changes. On this loop, four of them matter:</p>
+        <ul>
+          <li><b>Constant propagation</b> sees that <code>r3</code> is always 10 and puts the 10 straight into the
+            comparison.</li>
+          <li><b>Copy propagation</b> sees that <code>r1</code>, the variable <code>i</code>, is only ever a copy of
+            the counter <code>r2</code>, and uses <code>r2</code> directly.</li>
+          <li><b>Coalescing</b> writes the sum straight into <code>r0</code> instead of into a temporary that is
+            copied over afterwards.</li>
+          <li><b>Block cleanup</b> merges the empty block <code>L2</code> and removes the unreachable second
+            <code>ret</code>.</li>
+        </ul>
+        <p>Every pass must preserve runtime errors exactly: an optimization may never remove a division by zero
+          or an out-of-bounds access that the unoptimized program would have hit.</p>
+      </div>
+      <div class="art">
+        <pre class="code" data-lang="ir">func main(0 params, 7 regs)
+  r0 = mov 0
+  r2 = mov 0
+L0:
+  r4 = lt r2, 10
+  br r4, L1, L3
+L1:
+  r5 = mul r2, r2
+  r0 = add r0, r5
+  r2 = add r2, 1
+  jmp L0
+L3:
+  print_int r0
+  ret 0</pre>
+        <p class="caption">After the optimizer: <code>embc main.em --emit-ir</code></p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">codegen.hpp</p>
+        <h2>Virtual registers become real ones</h2>
+        <p>The x86-64 back end gives each virtual register a real one with a linear-scan allocator. It computes
+          how long each value lives from the control-flow graph and hands out eleven registers, spilling to the stack
+          only when they run out.</p>
+        <p>Here nothing spills: <code>total</code> lives in <code>rsi</code> and the counter in <code>rdi</code>
+          for the whole loop, so the loop never touches memory. The comparison and the branch fuse into
+          <code>cmp</code> and <code>jge</code>, which jumps out when the counter reaches 10. Before the call,
+          <code>total</code> moves into <code>rdi</code>, because that's where the System V calling convention
+          puts the first argument. And since no value has to survive the call, no callee-saved register is used, so
+          none has to be saved.</p>
+      </div>
+      <div class="art">
+        <pre class="code" data-lang="asm">  .intel_syntax noprefix
+  .section .rodata
+  .text
+
+  .globl ember_main
+  .type ember_main, @function
+ember_main:
+  push rbp
+  mov rbp, rsp
+  sub rsp, 32
+  xor rsi, rsi
+  xor rdi, rdi
+.Lember_main_0:
+  cmp rdi, 10
+  jge .Lember_main_3
+.Lember_main_1:
+  mov r8, rdi
+  imul r8, rdi
+  add rsi, r8
+  add rdi, 1
+  jmp .Lember_main_0
+.Lember_main_3:
+  mov rdi, rsi
+  call ember_print_int
+  mov rax, 0
+  leave
+  ret
+  .size ember_main, .-ember_main
+
+  .section .note.GNU-stack,&quot;&quot;,@progbits</pre>
+        <p class="caption">The generated assembly: <code>embc main.em --emit-asm</code>. gcc assembles it and links the runtime.</p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">rt/ember_rt.c, 903 lines of C</p>
+        <h2>A garbage collector that knows most objects die young</h2>
+        <p>Structs, arrays and closures live on a heap managed by a generational collector. New objects are
+          collected often and cheaply; objects that survive are promoted and checked rarely. A card-marking write
+          barrier, emitted by the compiler on every pointer store, remembers where old objects point at new ones.</p>
+        <p>The collector doesn't move objects and scans the stack conservatively. That works because the register
+          allocator guarantees every pointer that is live across a call sits in a callee-saved register or on the
+          stack, where the collector looks.</p>
+      </div>
+      <div class="art">
+        <table class="data">
+          <thead><tr><th>Binary trees, depth 16</th><th class="num">Generational</th><th class="num">Full only</th></tr></thead>
+          <tbody>
+            <tr><td>Total time</td><td class="num"><strong>0.73 s</strong></td><td class="num">0.99 s</td></tr>
+            <tr><td>Time spent collecting</td><td class="num"><strong>131 ms</strong></td><td class="num">346 ms</td></tr>
+            <tr><td>Longest pause</td><td class="num"><strong>7.6 ms</strong></td><td class="num">15.0 ms</td></tr>
+            <tr><td>Average pause</td><td class="num"><strong>1.5 ms</strong></td><td class="num">4.3 ms</td></tr>
+          </tbody>
+        </table>
+        <p class="caption">Millions of short-lived nodes next to one long-lived tree. On allocation-heavy programs Ember
+          runs 4.4 to 6.8 times faster than Python, and within 1.4 to 1.7 times of hand-written C.</p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">tests/run_tests.py, tests/fuzz.py</p>
+        <h2>Proving it, six ways</h2>
+        <p>Every test program runs on the interpreter, as native x86-64 and as WebAssembly, each with the optimizer
+          off and on. All six results must match the expected output exactly, and the expected output is computed
+          by an independent Python program, never by Ember itself.</p>
+        <p>A fuzzer writes random valid programs and runs them on all six paths. When the paths disagree, a shrinker
+          deletes lines until the smallest program that still disagrees is left. 1,000 programs, 1,000 agreements.</p>
+      </div>
+      <div class="art">
+        <table class="data">
+          <thead><tr><th>Bug</th><th>Found by</th><th>Cause</th></tr></thead>
+          <tbody>
+            <tr><td>Three programs differed with the optimizer on</td><td>six-path testing</td><td>The inliner renamed registers in instructions but not in runtime-call arguments</td></tr>
+            <tr><td>Compiler crash on a struct literal inside a generic function</td><td>fuzzer</td><td>A reference into the type table outlived a resize of the table</td></tr>
+            <tr><td><code>-nan</code> on x86-64, <code>nan</code> on WebAssembly</td><td>fuzzer</td><td>JavaScript's NaN is positive, glibc's is negative; the wasm runtime now matches</td></tr>
+            <tr><td><code>parse_int("  -17")</code> returned 0</td><td>Python reference</td><td>Leading spaces were not skipped</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">tests/bench</p>
+        <h2>Measured, not guessed</h2>
+        <p>Every optimizer change was kept or dropped on numbers. Wall-clock time on a shared machine varies by up
+          to 30%, so the deciding number was the exact count of instructions executed, measured with cachegrind;
+          paired timing runs settled the cases that count can't see, like a divide replaced by shifts.</p>
+        <p>Every pass can be switched off without rebuilding, so "with" and "without" always come from the same
+          compiler binary.</p>
+      </div>
+      <div class="art">
+        <table class="data">
+          <thead><tr><th>Benchmark</th><th class="num">Speedup</th><th class="num">Instructions</th></tr></thead>
+          <tbody>
+            <tr><td>fib, recursive</td><td class="num"><strong>2.10×</strong></td><td class="num">942M → 918M</td></tr>
+            <tr><td>hash map, 1M inserts</td><td class="num"><strong>2.01×</strong></td><td class="num">985M → 542M</td></tr>
+            <tr><td>quicksort, 5M ints</td><td class="num"><strong>1.65×</strong></td><td class="num">3,971M → 2,232M</td></tr>
+            <tr><td>n-body, 2M steps</td><td class="num"><strong>1.65×</strong></td><td class="num">6,202M → 4,568M</td></tr>
+            <tr><td>string building, 20 MB</td><td class="num"><strong>1.50×</strong></td><td class="num">4,855M → 3,622M</td></tr>
+          </tbody>
+        </table>
+        <p class="caption">Before and after the register allocator and optimizer work.</p>
+      </div>
+    </section>
+
+    <section class="leg">
+      <span class="node"></span>
+      <div class="text">
+        <p class="where">wasm.hpp, playground/</p>
+        <h2>And then, this website</h2>
+        <p>Ember has a second back end that writes WebAssembly modules byte by byte. Separately, the compiler
+          itself is plain C++, so it can be built for the browser: the playground and the tour run the real
+          compiler, as a 900 KB WebAssembly file, inside a web worker that can be stopped if a program loops
+          forever.</p>
+        <p>Its output was compared with the native compiler's on every test program: IR, assembly and error
+          messages, 227 comparisons, all byte for byte identical.</p>
+        <p><a class="btn solid" href="play.html"><span class="coal" aria-hidden="true"></span>Try it in the playground</a></p>
+      </div>
+      <div class="art"></div>
+    </section>
+  </div>
+</main>
+<footer class="foot">
+  <p>Ember is a personal project by Muneeb: the language, its compiler, runtime, garbage collector and standard
+    library, written from scratch to understand what happens underneath the tools I use every day.</p>
+  <nav aria-label="Footer"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside</a><a href="reference.html">Reference</a><a href="https://github.com/muneeb12011/ember-lang">Source on GitHub</a></nav>
+</footer>
+<script src="js/ember.js"></script>
+<script>highlightStatic();</script>
+</body>
+</html>
