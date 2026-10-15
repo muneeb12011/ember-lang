@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔥 Ember
+#  Ember
 
 **A statically typed programming language with its own optimizing compiler.**
 Written from scratch in C++17 with no dependencies: lexer, type checker, optimizer, x86-64 and WebAssembly back ends, and a garbage collector.
