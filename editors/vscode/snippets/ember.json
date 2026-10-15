@@ -1,0 +1,52 @@
+{
+  "main function": {
+    "prefix": "main",
+    "body": ["fn main() -> int {", "\t$0", "\treturn 0;", "}"],
+    "description": "Program entry point"
+  },
+  "function": {
+    "prefix": "fn",
+    "body": ["fn ${1:name}(${2:x}: ${3:int}) -> ${4:int} {", "\t$0", "}"],
+    "description": "Function"
+  },
+  "for range": {
+    "prefix": "for",
+    "body": ["for ${1:i} in ${2:0}..${3:n} {", "\t$0", "}"],
+    "description": "for loop over a range"
+  },
+  "while": {
+    "prefix": "while",
+    "body": ["while ${1:condition} {", "\t$0", "}"],
+    "description": "while loop"
+  },
+  "if": {
+    "prefix": "if",
+    "body": ["if ${1:condition} {", "\t$0", "}"],
+    "description": "if statement"
+  },
+  "struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name} { ${2:field}: ${3:int} }"],
+    "description": "Struct declaration"
+  },
+  "enum": {
+    "prefix": "enum",
+    "body": ["enum ${1:Name} { ${2:A}, ${3:B} }"],
+    "description": "Enum declaration"
+  },
+  "match": {
+    "prefix": "match",
+    "body": ["match ${1:value} {", "\t${2:Variant} => { $0 }", "\t_ => { }", "}"],
+    "description": "match on an enum"
+  },
+  "print": {
+    "prefix": "print",
+    "body": ["print($0);"],
+    "description": "print a value"
+  },
+  "vec import": {
+    "prefix": "vec",
+    "body": ["import \"std/vec.em\" as vec;"],
+    "description": "Import the growable list module"
+  }
+}

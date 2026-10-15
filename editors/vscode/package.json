@@ -1,0 +1,30 @@
+{
+  "name": "ember-lang",
+  "displayName": "Ember Language",
+  "description": "Syntax highlighting, file icon, comments, brackets and code snippets for the Ember programming language (.em).",
+  "version": "0.2.0",
+  "publisher": "muneeb",
+  "license": "MIT",
+  "icon": "icon.png",
+  "engines": { "vscode": "^1.70.0" },
+  "categories": ["Programming Languages", "Snippets"],
+  "keywords": ["ember", "em", "compiler", "embc"],
+  "galleryBanner": { "color": "#1C1311", "theme": "dark" },
+  "contributes": {
+    "languages": [
+      {
+        "id": "ember",
+        "aliases": ["Ember", "ember"],
+        "extensions": [".em"],
+        "configuration": "./language-configuration.json",
+        "icon": { "light": "./icons/ember.svg", "dark": "./icons/ember.svg" }
+      }
+    ],
+    "grammars": [
+      { "language": "ember", "scopeName": "source.ember", "path": "./syntaxes/ember.tmLanguage.json" }
+    ],
+    "snippets": [
+      { "language": "ember", "path": "./snippets/ember.json" }
+    ]
+  }
+}

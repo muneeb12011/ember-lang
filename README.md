@@ -1,6 +1,9 @@
 <div align="center">
 
-#  Ember
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.png">
+  <img src="assets/wordmark-light.png" alt="Ember" width="360">
+</picture>
 
 **A statically typed programming language with its own optimizing compiler.**
 Written from scratch in C++17 with no dependencies: lexer, type checker, optimizer, x86-64 and WebAssembly back ends, and a garbage collector.
