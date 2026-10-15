@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ember Playground</title>
+  <meta name="description" content="Type an Ember program and watch the compiler turn it into IR, optimized IR and x86-64 machine code, in your browser.">
+  <meta property="og:title" content="Ember Playground">
+  <meta property="og:description" content="A programming language with its own optimizing compiler, running in your browser as WebAssembly.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try { const t = localStorage.getItem('ember-theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="https://github.com/muneeb12011/ember-lang" title="Ember on GitHub">
+      <img src="logo.svg" alt="" width="38" height="38">
+      <span class="word">Ember</span>
+    </a>
+    <p class="tagline">Type a program. Watch it become machine code.</p>
+    <div class="actions">
+      <label class="pick">
+        <span class="sr-only">Load an example program</span>
+        <select id="examples"></select>
+      </label>
+      <button id="share" class="btn ghost" type="button">Copy link</button>
+      <button id="theme" class="btn ghost icon" type="button" aria-label="Switch between light and dark theme">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+      </button>
+      <button id="run" class="btn run" type="button" disabled>
+        <span class="coal" aria-hidden="true"></span>
+        <span class="run-label">Loading</span>
+        <kbd>Ctrl ↵</kbd>
+      </button>
+    </div>
+  </header>
+
+  <nav class="rail" id="rail" aria-label="Compiler stages">
+    <div class="rail-track" aria-hidden="true"><div class="rail-heat" id="heat"></div></div>
+    <div class="rail-src">
+      <button class="stage" data-stage="src" aria-pressed="true" tabindex="-1">
+        <span class="node"></span>
+        <span class="stage-name">Source</span>
+        <span class="stat" id="stat-src"></span>
+      </button>
+    </div>
+    <div class="rail-rest">
+      <button class="stage" data-stage="ir0" aria-pressed="false">
+        <span class="node"></span>
+        <span class="stage-name">IR</span>
+        <span class="stat" id="stat-ir0"></span>
+      </button>
+      <button class="stage" data-stage="ir1" aria-pressed="false">
+        <span class="node"></span>
+        <span class="stage-name">Optimized</span>
+        <span class="stat" id="stat-ir1"></span>
+      </button>
+      <button class="stage" data-stage="asm" aria-pressed="false">
+        <span class="node"></span>
+        <span class="stage-name">x86-64</span>
+        <span class="stat" id="stat-asm"></span>
+      </button>
+      <button class="stage" data-stage="out" aria-pressed="true">
+        <span class="node"></span>
+        <span class="stage-name">Output</span>
+        <span class="stat" id="stat-out"></span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="work">
+    <section class="pane" aria-label="Source code editor">
+      <div class="pane-head">
+        <span class="file">main.em</span>
+        <span class="note" id="cursor">Ln 1, Col 1</span>
+      </div>
+      <div class="scroller" id="scroller">
+        <div class="gutter" id="gutter" aria-hidden="true"></div>
+        <div class="stack">
+          <pre class="hl" id="hl" aria-hidden="true"></pre>
+          <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
+                    aria-label="Ember source code"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" aria-live="polite">
+      <div class="pane-head">
+        <span class="view-title" id="view-title">Output</span>
+        <span class="note" id="view-note">Run on the compiler's reference interpreter</span>
+      </div>
+      <div class="views">
+        <pre class="view" id="view-out"></pre>
+        <pre class="view" id="view-ir0" hidden></pre>
+        <pre class="view" id="view-ir1" hidden></pre>
+        <pre class="view" id="view-asm" hidden></pre>
+      </div>
+      <details class="stdin">
+        <summary>Program input</summary>
+        <textarea id="stdin" spellcheck="false" rows="3" placeholder="Lines for read_int() and read_line()"></textarea>
+      </details>
+      <div class="status" id="status">Loading the compiler, 900 KB of WebAssembly</div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>This is the real Ember compiler, built from its C++ source to WebAssembly. Programs run on its reference
+      interpreter; the x86-64 stage shows the code the native compiler generates on Linux.</p>
+    <a href="https://github.com/muneeb12011/ember-lang">Source on GitHub</a>
+  </footer>
+
+  <script src="examples.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

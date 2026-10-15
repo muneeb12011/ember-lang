@@ -15,7 +15,7 @@ Written from scratch in C++17 with no dependencies: lexer, type checker, optimiz
 ![Fuzzer](https://img.shields.io/badge/fuzzer-1000%2F1000%20agree-2EA043?style=for-the-badge)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-lightgrey?style=for-the-badge)
 
-[Quick start](#-quick-start) · [Highlights](#-highlights) · [How it works](#%EF%B8%8F-how-it-works) · [How it is tested](#-how-it-is-tested) · [Performance](#-performance) · [Language reference](#-language-reference)
+[**Try it online**](https://ember-lang.vercel.app) · [Quick start](#-quick-start) · [Highlights](#-highlights) · [How it works](#%EF%B8%8F-how-it-works) · [How it is tested](#-how-it-is-tested) · [Performance](#-performance) · [Language reference](#-language-reference)
 
 </div>
 
@@ -43,6 +43,10 @@ fn main() -> int {
 ```
 
 The same program compiles to a native Linux executable, to WebAssembly running on node, or runs on the reference interpreter, and all three must print exactly the same thing.
+
+## 🌐 Try it online
+
+**[ember-lang.vercel.app](https://ember-lang.vercel.app)** runs the real compiler in your browser, built from the same C++ source to WebAssembly. Write a program, run it, and watch it become IR, optimized IR and x86-64 assembly. Nothing to install. The playground's source is in [`playground/`](playground/).
 
 ## ✨ Highlights
 
@@ -175,7 +179,7 @@ flowchart LR
 What the optimizer does to a simple loop (`./embc hello.em --emit-ir`, before and after):
 
 <table>
-<tr><th>-O0 (14 instructions)</th><th>-O1 (9 instructions)</th></tr>
+<tr><th>-O0 (14 instructions)</th><th>-O1 (10 instructions)</th></tr>
 <tr>
 <td>
 
