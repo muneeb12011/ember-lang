@@ -1,0 +1,5 @@
+// expect: unterminated string literal
+fn main() -> int {
+    print("oops);
+    return 0;
+}
