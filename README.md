@@ -6,7 +6,7 @@
 </picture>
 
 **A statically typed programming language with its own optimizing compiler.**
-Written from scratch in C++17 with no dependencies: lexer, type checker, optimizer, x86-64 and WebAssembly back ends, and a garbage collector.
+Written in C++17 with no dependencies: lexer, type checker, optimizer, x86-64 and WebAssembly back ends, and a garbage collector.
 
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
 ![x86-64](https://img.shields.io/badge/target-x86--64-E34F26?style=for-the-badge)
@@ -473,6 +473,6 @@ See [`docs/STATUS.md`](docs/STATUS.md) for the full list and the design decision
 
 <div align="center">
 
-Built by **Muneeb** to understand what happens underneath the tools I use every day.
+A personal project by **Muneeb**.
 
 </div>

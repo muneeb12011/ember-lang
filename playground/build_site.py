@@ -45,8 +45,8 @@ def header(current):
 </header>'''
 
 FOOTER = f'''<footer class="foot">
-  <p>Ember is a personal project by Muneeb: the language, its compiler, runtime, garbage collector and standard
-    library, written from scratch to understand what happens underneath the tools I use every day.</p>
+  <p>Ember is a personal project by Muneeb: a programming language with its own compiler, runtime, garbage
+    collector and standard library.</p>
   <nav aria-label="Footer"><a href="tour.html">Tour</a><a href="play.html">Playground</a><a href="inside.html">Inside</a><a href="reference.html">Reference</a><a href="{GITHUB}">Source on GitHub</a></nav>
 </footer>'''
 

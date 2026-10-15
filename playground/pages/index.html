@@ -1,4 +1,4 @@
-{{HEAD Ember: source in, machine code out | A programming language with its own optimizing compiler, written from scratch. Run it in your browser.}}
+{{HEAD Ember: source in, machine code out | A programming language with its own optimizing compiler. Run it in your browser.}}
 <body>
 {{HEADER index}}
 <main>
@@ -6,7 +6,7 @@
     <div class="hero-row">
     <div>
       <h1><span>Source in.</span> <span>Machine code out.</span></h1>
-      <p class="lede">Ember is a programming language I built from scratch, with its own optimizing compiler:
+      <p class="lede">Ember is a programming language with its own optimizing compiler:
         <strong>about 6,700 lines of C++</strong> from the lexer to the register allocator, and no dependencies.
         The compiler on this page is the real one, built to WebAssembly.</p>
       <div class="cta">
@@ -87,9 +87,9 @@ fn describe(r: Reading) -> str {
   </section>
 
   <section class="section" aria-labelledby="h-stages">
-    <h2 id="h-stages">Six stages, every one hand-written</h2>
-    <p class="intro">No parser generator, no LLVM, no borrowed back end. Each stage is a file you can read, and the
-      line counts are real.</p>
+    <h2 id="h-stages">Six stages, no borrowed parts</h2>
+    <p class="intro">No parser generator, no LLVM: every stage is part of Ember's own source. Each one is a file you
+      can read, and the line counts are real.</p>
     <ol class="stages">
       <li><span class="node"></span><h3>Lexer</h3><p>Turns text into tokens: numbers in four bases, strings with escapes, comments kept for the formatter.</p><span class="src">lexer.hpp, 278 lines</span></li>
       <li><span class="node"></span><h3>Parser</h3><p>Recursive descent with precedence climbing. Generics, match and lambdas included.</p><span class="src">parser.hpp, 732 lines</span></li>
@@ -122,7 +122,7 @@ fn describe(r: Reading) -> str {
         </ul>
         <p class="story"><b>What it caught.</b> Three string-handling programs gave different answers with the
           optimizer on. The cause: the inliner renamed registers inside instructions but not inside runtime-call
-          arguments, so inlined code read the caller's values. To prove the fuzzer would have found it, I put the bug
+          arguments, so inlined code read the caller's values. To prove the fuzzer would have found it, the bug was put
           back: it failed 3 of 30 random programs, and the shrinker cut the first one from 51 lines to 16.</p>
       </div>
     </div>
